@@ -1,1 +1,82 @@
-print ("Hello")
+local ServerStorage = game:GetService("ServerStorage")
+local stove = script.Parent
+
+local RAW_TOOL_NAME = "tigitg"     -- ของดิบ
+local COOKED_TOOL_NAME = "black1"  -- คุกกี้
+local COOK_TIME = 5
+
+-- 🔘 Prompt ที่เตา (ใส่ของ)
+local stovePrompt = Instance.new("ProximityPrompt")
+stovePrompt.Parent = stove
+stovePrompt.ActionText = "Put"
+stovePrompt.ObjectText = "TungTung"
+stovePrompt.HoldDuration = 2
+stovePrompt.MaxIndicatorDistance = 8
+
+local cooking = false
+local cookedVisual = nil
+
+stovePrompt.Triggered:Connect(function(player)
+	if cooking or cookedVisual then return end
+
+	local character = player.Character
+	if not character then return end
+
+	local rawTool = character:FindFirstChild(RAW_TOOL_NAME)
+	if not rawTool then return end
+
+	local handle = rawTool:FindFirstChild("Handle")
+	if not handle then return end
+
+	cooking = true
+	stovePrompt.Enabled = false
+
+	-- 🥚 แสดงของดิบ
+	local rawVisual = handle:Clone()
+	rawVisual.Anchored = true
+	rawVisual.CanCollide = false
+	rawVisual.CFrame = stove.CFrame * CFrame.new(0, 0.5, 0)
+	rawVisual.Parent = workspace
+
+	rawTool:Destroy()
+
+	-- ⏳ ทำอาหาร
+	task.wait(COOK_TIME)
+
+	rawVisual:Destroy()
+
+	-- 🍪 คุกกี้สุก
+	local cooked = Instance.new("Part")
+	cooked.Size = Vector3.new(1,1,1)
+	cooked.Anchored = true
+	cooked.CanCollide = false
+	cooked.BrickColor = BrickColor.new("Really black")
+	cooked.CFrame = stove.CFrame * CFrame.new(0, 0.5, 0)
+	cooked.Parent = workspace
+
+	-- 🔘 Prompt หยิบคุกกี้
+	local pickPrompt = Instance.new("ProximityPrompt")
+	pickPrompt.Parent = cooked
+	pickPrompt.ActionText = "Pick"
+	pickPrompt.ObjectText = "Cookie"
+	pickPrompt.HoldDuration = 1
+	pickPrompt.MaxIndicatorDistance = 8
+
+	pickPrompt.Triggered:Connect(function(player)
+		local backpack = player:FindFirstChildOfClass("Backpack")
+		if not backpack then return end
+
+		local cookedTool = ServerStorage:FindFirstChild(COOKED_TOOL_NAME)
+		if cookedTool then
+			local toolClone = cookedTool:Clone()
+			toolClone.Parent = backpack -- ✅ เข้ากระเป๋า
+		end
+
+		cooked:Destroy()              -- ✅ คุกกี้หายจากเตา
+		cookedVisual = nil
+		stovePrompt.Enabled = true   -- เตาใช้ต่อได้
+	end)
+
+	cookedVisual = cooked
+	cooking = false
+end)
